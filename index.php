@@ -56,6 +56,14 @@
                     <span id="current-endpoint-name">New Request</span>
                 </div>
                 <div class="actions">
+                    <div class="env-selector-container">
+                        <select id="env-selector" class="env-select">
+                            <option value="">No Environment</option>
+                        </select>
+                        <button class="icon-btn" id="manage-envs-btn" title="Manage Environments">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                    </div>
                     <button id="save-collection-btn" class="btn btn-secondary">
                         <i class="fas fa-save"></i> Save All
                     </button>
@@ -355,6 +363,47 @@
             </div>
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="closeModal('logs-modal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Environments Modal -->
+    <div id="envs-modal" class="modal">
+        <div class="modal-content" style="width: 600px; max-height: 80vh; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Environments</h2>
+                <button class="btn btn-primary" id="add-env-btn" style="height: 35px; padding: 0 15px;">
+                    <i class="fas fa-plus"></i> Add
+                </button>
+            </div>
+            
+            <div class="env-list-container" style="flex: 1; overflow-y: auto;">
+                <div id="env-items-list">
+                    <!-- Loaded from API -->
+                </div>
+            </div>
+
+            <div id="env-edit-section" class="hidden" style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                <input type="hidden" id="edit-env-id">
+                <div class="form-group">
+                    <label>Environment Name</label>
+                    <input type="text" id="edit-env-name" placeholder="e.g. Production">
+                </div>
+                <div class="form-group">
+                    <label>Variables (Key/Value)</label>
+                    <div id="env-vars-editor" class="key-value-editor">
+                        <!-- Key-Value pairs -->
+                    </div>
+                    <button class="add-row-btn" onclick="createRow('env-vars-editor')">+ Add Variable</button>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" id="cancel-env-edit-btn">Cancel</button>
+                    <button class="btn btn-primary" id="save-env-btn">Save Environment</button>
+                </div>
+            </div>
+
+            <div class="modal-actions" id="env-modal-main-actions">
+                <button class="btn btn-secondary" onclick="closeModal('envs-modal')">Close</button>
             </div>
         </div>
     </div>

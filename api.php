@@ -68,6 +68,15 @@ if ($method === 'GET') {
         while ($row = mysqli_fetch_assoc($res)) { $logs[] = $row; }
         echo json_encode($logs);
     }
+    elseif ($action === 'environments') {
+        $res = mysqli_query($conn, "SELECT * FROM environments ORDER BY name ASC");
+        $envs = [];
+        while ($row = mysqli_fetch_assoc($res)) {
+            $row['variables'] = json_decode($row['variables'], true) ?: [];
+            $envs[] = $row;
+        }
+        echo json_encode($envs);
+    }
 } 
 elseif ($method === 'POST') {
     // Role Check
@@ -443,11 +452,74 @@ elseif ($method === 'POST') {
             echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
         }
     }
+    elseif ($action === 'create_environment') {
+        if ($user_role === 'viewer') { http_response_code(403); exit; }
+        $name = $data['name'] ?? 'New Environment';
+        $vars = json_encode($data['variables'] ?? []);
+        $stmt = mysqli_prepare($conn, "INSERT INTO environments (name, variables) VALUES (?, ?)");
+        mysqli_stmt_bind_param($stmt, "ss", $name, $vars);
+        if (mysqli_stmt_execute($stmt)) {
+            echo json_encode(['status' => 'success', 'id' => mysqli_insert_id($conn)]);
+            mysqli_query($conn, "INSERT INTO audit_logs (user_id, action, details) VALUES ($user_id, 'CREATE_ENVIRONMENT', 'Created env: $name')");
+        } else {
+            http_response_code(500); echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
+        }
+    }
+    elseif ($action === 'update_environment') {
+        if ($user_role === 'viewer') { http_response_code(403); exit; }
+        $id = $data['id'] ?? null;
+        $name = $data['name'] ?? '';
+        $vars = json_encode($data['variables'] ?? []);
+        $stmt = mysqli_prepare($conn, "UPDATE environments SET name=?, variables=? WHERE id=?");
+        mysqli_stmt_bind_param($stmt, "ssi", $name, $vars, $id);
+        if (mysqli_stmt_execute($stmt)) {
+            echo json_encode(['status' => 'success']);
+            mysqli_query($conn, "INSERT INTO audit_logs (user_id, action, details) VALUES ($user_id, 'UPDATE_ENVIRONMENT', 'Updated env: $name')");
+        } else {
+            http_response_code(500); echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
+        }
+    }
+    elseif ($action === 'delete_environment') {
+        if ($user_role !== 'superadmin') { http_response_code(403); exit; }
+        $id = $data['id'] ?? null;
+        $stmt = mysqli_prepare($conn, "DELETE FROM environments WHERE id=?");
+        mysqli_stmt_bind_param($stmt, "i", $id);
+        if (mysqli_stmt_execute($stmt)) {
+            echo json_encode(['status' => 'success']);
+            mysqli_query($conn, "INSERT INTO audit_logs (user_id, action, details) VALUES ($user_id, 'DELETE_ENVIRONMENT', 'Deleted env ID: $id')");
+        } else {
+            http_response_code(500); echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
+        }
+    }
     elseif ($action === 'send_request') {
         $url = $data['url'] ?? '';
         $method_req = $data['method'] ?? 'GET';
         $headers_req = $data['headers'] ?? [];
         $body_req = $data['body'] ?? '';
+        $env_id = $data['env_id'] ?? null;
+
+        // Variable Replacement from Environment
+        if ($env_id) {
+            $stmt = mysqli_prepare($conn, "SELECT variables FROM environments WHERE id = ?");
+            mysqli_stmt_bind_param($stmt, "i", $env_id);
+            mysqli_stmt_execute($stmt);
+            $res = mysqli_stmt_get_result($stmt);
+            if ($row = mysqli_fetch_assoc($res)) {
+                $vars = json_decode($row['variables'], true) ?: [];
+                foreach ($vars as $key => $val) {
+                    $pattern = '{{' . $key . '}}';
+                    $url = str_replace($pattern, $val, $url);
+                    // Also replace in headers
+                    foreach ($headers_req as $idx => $h) {
+                        $headers_req[$idx] = str_replace($pattern, $val, $h);
+                    }
+                    // Replace in body
+                    if (is_string($body_req)) {
+                        $body_req = str_replace($pattern, $val, $body_req);
+                    }
+                }
+            }
+        }
 
         if (!$url) {
             echo json_encode(['status' => 'error', 'message' => 'URL is required']);

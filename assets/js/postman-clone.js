@@ -32,6 +32,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const viewLogsBtn = document.getElementById('view-logs-btn');
     const logsModal = document.getElementById('logs-modal');
 
+    // Environments State & Elements
+    let environments = [];
+    const envSelector = document.getElementById('env-selector');
+    const manageEnvsBtn = document.getElementById('manage-envs-btn');
+    const envsModal = document.getElementById('envs-modal');
+    const envEditSection = document.getElementById('env-edit-section');
+    const envItemsList = document.getElementById('env-items-list');
+
     // Helper for Headers
     function getHeaders() {
         return {
@@ -652,7 +660,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch('api.php?action=send_request', {
                 method: 'POST',
                 headers: getHeaders(),
-                body: JSON.stringify({ url, method, headers, body })
+                body: JSON.stringify({ url, method, headers, body, env_id: envSelector.value })
             });
 
             const result = await res.json();
@@ -792,6 +800,105 @@ document.addEventListener('DOMContentLoaded', () => {
         ).join('');
     }
 
+    // Environment Logic
+    if (manageEnvsBtn) {
+        manageEnvsBtn.addEventListener('click', () => {
+            envsModal.style.display = 'flex';
+            envEditSection.classList.add('hidden');
+            document.getElementById('env-modal-main-actions').classList.remove('hidden');
+            loadEnvironments();
+        });
+    }
+
+    async function loadEnvironments() {
+        const res = await fetch('api.php?action=environments');
+        environments = await res.json();
+        renderEnvSelector();
+        renderEnvList();
+    }
+
+    function renderEnvSelector() {
+        const currentVal = envSelector.value;
+        envSelector.innerHTML = '<option value="">No Environment</option>' +
+            environments.map(env => `<option value="${env.id}" ${env.id == currentVal ? 'selected' : ''}>${env.name}</option>`).join('');
+    }
+
+    function renderEnvList() {
+        envItemsList.innerHTML = environments.map(env => `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border-color);">
+                <span style="font-weight: 600;">${env.name}</span>
+                <div style="display: flex; gap: 10px;">
+                    <button class="icon-btn" onclick="openEditEnv(${env.id})" title="Edit"><i class="fas fa-edit"></i></button>
+                    ${currentUserRole === 'superadmin' ? `<button class="icon-btn" onclick="deleteEnv(${env.id})" title="Delete"><i class="fas fa-trash" style="color:var(--error);"></i></button>` : ''}
+                </div>
+            </div>
+        `).join('') || '<div style="padding: 20px; text-align: center; color: var(--text-dim);">No environments found</div>';
+    }
+
+    window.openEditEnv = (id) => {
+        const env = id ? environments.find(e => e.id == id) : { id: '', name: '', variables: {} };
+        document.getElementById('edit-env-id').value = env.id;
+        document.getElementById('edit-env-name').value = env.name;
+
+        const container = document.getElementById('env-vars-editor');
+        container.innerHTML = '';
+        if (env.variables && Object.keys(env.variables).length > 0) {
+            for (const [k, v] of Object.entries(env.variables)) createRow('env-vars-editor', k, v);
+        } else {
+            createRow('env-vars-editor');
+        }
+
+        envEditSection.classList.remove('hidden');
+        document.getElementById('env-modal-main-actions').classList.add('hidden');
+    };
+
+    document.getElementById('add-env-btn').addEventListener('click', () => openEditEnv(null));
+    document.getElementById('cancel-env-edit-btn').addEventListener('click', () => {
+        envEditSection.classList.add('hidden');
+        document.getElementById('env-modal-main-actions').classList.remove('hidden');
+    });
+
+    document.getElementById('save-env-btn').addEventListener('click', async () => {
+        const id = document.getElementById('edit-env-id').value;
+        const name = document.getElementById('edit-env-name').value;
+        const variables = getKVData('env-vars-editor');
+
+        if (!name) return alert('Environment name required');
+
+        const action = id ? 'update_environment' : 'create_environment';
+        const res = await fetch(`api.php?action=${action}`, {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ id, name, variables })
+        });
+        const result = await res.json();
+        if (result.status === 'success') {
+            loadEnvironments();
+            envEditSection.classList.add('hidden');
+            document.getElementById('env-modal-main-actions').classList.remove('hidden');
+        } else {
+            alert('Error: ' + result.message);
+        }
+    });
+
+    window.deleteEnv = async (id) => {
+        if (!confirm('Are you sure you want to delete this environment?')) return;
+        const res = await fetch('api.php?action=delete_environment', {
+            method: 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify({ id })
+        });
+        const result = await res.json();
+        if (result.status === 'success') {
+            loadEnvironments();
+        } else {
+            alert('Error: ' + result.message);
+        }
+    };
+
     // Initialize
-    loadProjects().then(loadEndpoints);
+    loadProjects().then(() => {
+        loadEndpoints();
+        loadEnvironments();
+    });
 });

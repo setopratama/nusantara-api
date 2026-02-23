@@ -61,3 +61,13 @@ ON DUPLICATE KEY UPDATE password=VALUES(password), role=VALUES(role);
 INSERT INTO projects (name, description) VALUES 
 ('Nusantara Core', 'Dokumentasi internal untuk sistem inti Nusantara')
 ON DUPLICATE KEY UPDATE id=id;
+
+-- Environments Table
+CREATE TABLE IF NOT EXISTS environments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    variables JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
