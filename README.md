@@ -69,7 +69,7 @@ Software ini dirancang agar mudah dipahami secara instan oleh AI Agent (seperti 
 - **Architecture**: Native PHP (Backend) & Vanilla JS (Frontend) untuk meminimalkan kompleksitas dependensi.
 - **Entry Points**: 
     - `api.php`: Pusat seluruh logika data (Router).
-    - `postman-clone.js`: Pusat interaksi UI dan state management.
+    - `app.js`: Pusat interaksi UI dan state management.
     - `modern-ui.css`: Kontrol penuh visual melalui CSS Variables di `:root`.
 - **Database Consistency**: Skema database di `database.sql` adalah *source of truth*. Fitur *Auto-Migration* di `api.php` memastikan tabel selalu up-to-date.
 

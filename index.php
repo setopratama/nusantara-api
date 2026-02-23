@@ -408,6 +408,6 @@
         </div>
     </div>
 
-    <script src="assets/js/postman-clone.js"></script>
+    <script src="assets/js/app.js"></script>
 </body>
 </html>
