@@ -12,6 +12,15 @@ $conn = get_db_conn();
 $user_id = $_SESSION['user_id'];
 $user_role = $_SESSION['role'];
 
+// Auto-migration for Environments Table
+mysqli_query($conn, "CREATE TABLE IF NOT EXISTS environments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE,
+    variables JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
 // --- Router ---
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';

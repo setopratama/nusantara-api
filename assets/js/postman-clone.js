@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Key-Value Editor Logic
-    function createRow(containerId, key = '', value = '') {
+    window.createRow = (containerId, key = '', value = '') => {
         const container = document.getElementById(containerId);
         const row = document.createElement('div');
         row.className = 'key-value-row';
