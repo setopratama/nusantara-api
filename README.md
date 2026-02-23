@@ -62,22 +62,24 @@ Dokumentasi API modern berbasis web yang mendukung manajemen koleksi, pengujian 
 - `endpoints`: Detail instruksi API termasuk payload JSON yang terenkripsi di baris params/headers.
 - `audit_logs`: Log keamanan dan aktivitas sistem yang mencatat setiap aksi user.
 
-## � Agentic AI Development
+## 🤖 Agentic AI Development (AI Handoff Guide)
 
-Software ini dikembangkan dengan pendekatan **AI-First**, di mana agen AI (seperti **Antigravity**) berperan aktif sebagai arsitek dan pengembang utama. Sistem ini dirancang agar sangat "Agent-Friendly":
+Software ini dirancang agar mudah dipahami secara instan oleh AI Agent (seperti **Antigravity**) melalui struktur yang transparan (Seamless AI Handoff):
 
-- **Modularity**: Struktur kode Native PHP yang bersih memudahkan Agen AI untuk memahami alur logika tanpa overhead framework yang kompleks.
-- **Protocol Based**: Seluruh interaksi data dilakukan melalui router `api.php` yang konsisten, memudahkan Agen AI dalam melakukan integrasi atau debugging.
-- **Self-Documenting Schema**: Skema database yang deskriptif memungkinkan Agen AI untuk melakukan migrasi data atau optimasi query secara mandiri.
+- **Architecture**: Native PHP (Backend) & Vanilla JS (Frontend) untuk meminimalkan kompleksitas dependensi.
+- **Entry Points**: 
+    - `api.php`: Pusat seluruh logika data (Router).
+    - `postman-clone.js`: Pusat interaksi UI dan state management.
+    - `modern-ui.css`: Kontrol penuh visual melalui CSS Variables di `:root`.
+- **Database Consistency**: Skema database di `database.sql` adalah *source of truth*. Fitur *Auto-Migration* di `api.php` memastikan tabel selalu up-to-date.
 
 ## 🧠 Pedoman Pengembangan
 
 1. **Interaksi API**: Gunakan `api.php?action=[nama_action]` untuk seluruh operasional data.
-2. **CORS Safe**: Selalu gunakan proxy backend jika ingin menguji endpoint dari domain eksternal.
-3. **Styling**: Variabel warna dan spacing tersentralisasi di `:root` pada file `modern-ui.css`.
-4. **Keamanan**: Seluruh query database wajib menggunakan **Prepared Statements** untuk mencegah SQL Injection.
-5. **Auto-Migration**: Sistem dilengkapi fitur pengecekan tabel otomatis di `api.php` untuk memastikan kompatibilitas database saat deployment.
+2. **CORS Safe**: Selalu gunakan proxy backend via `send_request` untuk pengujian endpoint.
+3. **Styling**: Patuhi variabel di `modern-ui.css` untuk menjaga konsistensi UI premium.
+4. **Keamanan**: Wajib menggunakan **Prepared Statements** untuk semua interaksi database baru.
 
 ---
 **Antigravity Agentic AI**
-*Membangun masa depan perangkat lunak untuk Setopratama Project. Memberdayakan Pengembang Indonesia melalui kolaborasi Manusia & AI.*
+*Membangun infrastruktur cerdas untuk Setopratama Project.*
