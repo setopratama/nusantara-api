@@ -363,7 +363,7 @@ body {
     background-color: var(--input-bg);
     border: 1px solid var(--border-color);
     color: var(--accent-primary);
-    font-family: 'Fira Code', monospace;
+    font-family: 'IBM Plex Mono', 'Fira Code', monospace;
     padding: 15px;
     border-radius: 6px;
     resize: vertical;
@@ -424,7 +424,7 @@ body {
 }
 
 .json-code {
-    font-family: 'Fira Code', monospace;
+    font-family: 'IBM Plex Mono', 'Fira Code', monospace;
     font-size: 0.95rem;
     line-height: 1.6;
     color: #e2e8f0;
