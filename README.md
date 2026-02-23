@@ -62,12 +62,22 @@ Dokumentasi API modern berbasis web yang mendukung manajemen koleksi, pengujian 
 - `endpoints`: Detail instruksi API termasuk payload JSON yang terenkripsi di baris params/headers.
 - `audit_logs`: Log keamanan dan aktivitas sistem yang mencatat setiap aksi user.
 
-## 🧠 Pedoman Pengembangan (Untuk Developer/AI Agent)
+## � Agentic AI Development
+
+Software ini dikembangkan dengan pendekatan **AI-First**, di mana agen AI (seperti **Antigravity**) berperan aktif sebagai arsitek dan pengembang utama. Sistem ini dirancang agar sangat "Agent-Friendly":
+
+- **Modularity**: Struktur kode Native PHP yang bersih memudahkan Agen AI untuk memahami alur logika tanpa overhead framework yang kompleks.
+- **Protocol Based**: Seluruh interaksi data dilakukan melalui router `api.php` yang konsisten, memudahkan Agen AI dalam melakukan integrasi atau debugging.
+- **Self-Documenting Schema**: Skema database yang deskriptif memungkinkan Agen AI untuk melakukan migrasi data atau optimasi query secara mandiri.
+
+## 🧠 Pedoman Pengembangan
 
 1. **Interaksi API**: Gunakan `api.php?action=[nama_action]` untuk seluruh operasional data.
 2. **CORS Safe**: Selalu gunakan proxy backend jika ingin menguji endpoint dari domain eksternal.
 3. **Styling**: Variabel warna dan spacing tersentralisasi di `:root` pada file `modern-ui.css`.
 4. **Keamanan**: Seluruh query database wajib menggunakan **Prepared Statements** untuk mencegah SQL Injection.
+5. **Auto-Migration**: Sistem dilengkapi fitur pengecekan tabel otomatis di `api.php` untuk memastikan kompatibilitas database saat deployment.
 
 ---
-*Dikembangkan oleh Antigravity untuk Setopratama Project - Memberdayakan Pengembang Indonesia.*
+**Antigravity Agentic AI**
+*Membangun masa depan perangkat lunak untuk Setopratama Project. Memberdayakan Pengembang Indonesia melalui kolaborasi Manusia & AI.*
