@@ -434,14 +434,17 @@ body {
     color: #e2e8f0;
     display: flex;
     flex-direction: column;
-    padding: 10px 0;
+    padding: 10px 20px;
     width: max-content;
     min-width: 100%;
 }
 
 .code-line {
     display: flex;
-    min-width: 100%;
+    min-width: calc(100% + 40px);
+    /* Account for lateral padding */
+    margin-left: -20px;
+    /* Pull back to align gutter with edge */
 }
 
 .code-line:hover {
