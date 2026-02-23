@@ -10,6 +10,9 @@ Dokumentasi API modern berbasis web yang mendukung manajemen koleksi, pengujian 
   - Mendukung metode GET, POST, PUT, DELETE, dll.
   - Editor dinamis untuk URL Params, Headers, dan Request Body.
   - Dukungan Request Body format **Raw JSON** dan **Form Data**.
+- **Environment & Variables**:
+  - **Dynamic Substitution**: Gunakan variabel seperti `{{base_url}}` atau `{{api_key}}` yang otomatis diganti sesuai lingkungan yang dipilih.
+  - **Multi-Profile**: Kelola profil **Staging**, **Production**, atau **Local** dengan mudah melalui antarmuka khusus.
 - **Backend Proxy (CORS Bypass)**: Tidak perlu lagi khawatir dengan masalah CORS saat mencoba API. Seluruh request diproses melalui server backend menggunakan PHP cURL.
 - **Beautiful Response Viewer**:
   - **JSON Syntax Highlighting**: Pewarnaan otomatis untuk respon JSON agar mudah dibaca.
@@ -55,6 +58,7 @@ Dokumentasi API modern berbasis web yang mendukung manajemen koleksi, pengujian 
 
 - `users`: Mengelola data pengguna, password (hash), dan role.
 - `projects` (Collections): Master data grup koleksi utama.
+- `environments`: Penyimpanan variabel dinamis (JSON) berdasarkan profil lingkungan.
 - `endpoints`: Detail instruksi API termasuk payload JSON yang terenkripsi di baris params/headers.
 - `audit_logs`: Log keamanan dan aktivitas sistem yang mencatat setiap aksi user.
 
