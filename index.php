@@ -78,6 +78,9 @@
                             <div class="dropdown-item" id="manage-users-btn">
                                 <i class="fas fa-users-cog"></i> Manage Users
                             </div>
+                            <div class="dropdown-item" id="view-logs-btn">
+                                <i class="fas fa-history"></i> Activity Logs
+                            </div>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -327,6 +330,31 @@
             <div class="modal-actions">
                 <button class="btn btn-secondary" onclick="closeModal('profile-modal')">Cancel</button>
                 <button class="btn btn-primary" id="confirm-profile-update-btn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Logs Modal -->
+    <div id="logs-modal" class="modal">
+        <div class="modal-content" style="width: 800px; max-height: 80vh; display: flex; flex-direction: column;">
+            <h2>Activity Logs</h2>
+            <div class="user-list-container" style="flex: 1; overflow-y: auto; margin: 15px 0;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                    <thead>
+                        <tr style="text-align: left; border-bottom: 2px solid var(--border-color); color: var(--text-dim);">
+                            <th style="padding: 10px;">Time</th>
+                            <th style="padding: 10px;">User</th>
+                            <th style="padding: 10px;">Action</th>
+                            <th style="padding: 10px;">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logs-table-body">
+                        <!-- Loaded from API -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal('logs-modal')">Close</button>
             </div>
         </div>
     </div>

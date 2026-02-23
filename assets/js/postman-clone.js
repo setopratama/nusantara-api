@@ -29,6 +29,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const editUserModal = document.getElementById('edit-user-modal');
     const myProfileBtn = document.getElementById('my-profile-btn');
     const profileModal = document.getElementById('profile-modal');
+    const viewLogsBtn = document.getElementById('view-logs-btn');
+    const logsModal = document.getElementById('logs-modal');
 
     // Helper for Headers
     function getHeaders() {
@@ -686,6 +688,37 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('current-user-new-password').value = '';
             profileModal.style.display = 'flex';
         });
+    }
+
+    // Logs Logic
+    if (viewLogsBtn) {
+        viewLogsBtn.addEventListener('click', () => {
+            logsModal.style.display = 'flex';
+            loadLogs();
+        });
+    }
+
+    async function loadLogs() {
+        const res = await fetch('api.php?action=audit_logs');
+        const logs = await res.json();
+        const tbody = document.getElementById('logs-table-body');
+
+        if (logs.status === 'error') {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--error);">${logs.message}</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = logs.map(log => {
+            const date = new Date(log.created_at).toLocaleString();
+            return `
+                <tr style="border-bottom: 1px solid var(--border-color); vertical-align: top;">
+                    <td style="padding: 10px; color: var(--text-dim); font-size: 0.75rem;">${date}</td>
+                    <td style="padding: 10px; font-weight: 600;">${log.performer_name || 'System'}</td>
+                    <td style="padding: 10px;"><span class="urole" style="background: rgba(129, 140, 248, 0.1); color: #818cf8; border-color: rgba(129, 140, 248, 0.2);">${log.action}</span></td>
+                    <td style="padding: 10px; color: var(--text-main); line-height: 1.4;">${log.details}</td>
+                </tr>
+            `;
+        }).join('');
     }
 
     document.getElementById('confirm-profile-update-btn')?.addEventListener('click', async () => {

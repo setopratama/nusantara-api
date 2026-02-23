@@ -53,6 +53,21 @@ if ($method === 'GET') {
         while ($row = mysqli_fetch_assoc($res)) { $users[] = $row; }
         echo json_encode($users);
     }
+    elseif ($action === 'audit_logs') {
+        if ($user_role !== 'superadmin') {
+            http_response_code(403);
+            echo json_encode(['status' => 'error', 'message' => 'Forbidden']);
+            exit;
+        }
+        $res = mysqli_query($conn, "SELECT l.*, u.username as performer_name 
+                                    FROM audit_logs l 
+                                    LEFT JOIN users u ON l.user_id = u.id 
+                                    ORDER BY l.created_at DESC 
+                                    LIMIT 100");
+        $logs = [];
+        while ($row = mysqli_fetch_assoc($res)) { $logs[] = $row; }
+        echo json_encode($logs);
+    }
 } 
 elseif ($method === 'POST') {
     // Role Check
