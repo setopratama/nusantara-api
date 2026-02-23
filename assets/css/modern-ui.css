@@ -22,13 +22,13 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Inter', sans-serif;
-    font-size: 14px;
 }
 
 body {
     background-color: var(--bg-dark);
     color: var(--text-main);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
     height: 100vh;
     overflow: hidden;
 }
@@ -423,8 +423,12 @@ body {
     position: relative;
 }
 
+.json-code,
+.json-code * {
+    font-family: 'IBM Plex Mono', 'Fira Code', monospace !important;
+}
+
 .json-code {
-    font-family: 'IBM Plex Mono', 'Fira Code', monospace;
     font-size: 0.95rem;
     line-height: 1.6;
     color: #e2e8f0;
