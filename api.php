@@ -501,11 +501,11 @@ elseif ($method === 'POST') {
         }
     }
     elseif ($action === 'send_request') {
-        $url = $data['url'] ?? '';
+        $url = trim($data['url'] ?? '');
         $method_req = $data['method'] ?? 'GET';
         $headers_req = $data['headers'] ?? [];
         $body_req = $data['body'] ?? '';
-        $env_id = $data['env_id'] ?? null;
+        $env_id = isset($data['env_id']) && is_numeric($data['env_id']) ? intval($data['env_id']) : null;
 
         // Variable Replacement from Environment
         if ($env_id) {
@@ -517,14 +517,26 @@ elseif ($method === 'POST') {
                 $vars = json_decode($row['variables'], true) ?: [];
                 foreach ($vars as $key => $val) {
                     $pattern = '{{' . $key . '}}';
+                    
+                    // Replace in URL
                     $url = str_replace($pattern, $val, $url);
-                    // Also replace in headers
-                    foreach ($headers_req as $idx => $h) {
-                        $headers_req[$idx] = str_replace($pattern, $val, $h);
+                    
+                    // Replace in Headers (Key and Value)
+                    $new_headers = [];
+                    foreach ($headers_req as $hk => $hv) {
+                        $new_k = str_replace($pattern, $val, $hk);
+                        $new_v = str_replace($pattern, $val, $hv);
+                        $new_headers[$new_k] = $new_v;
                     }
-                    // Replace in body
+                    $headers_req = $new_headers;
+
+                    // Replace in Body
                     if (is_string($body_req)) {
                         $body_req = str_replace($pattern, $val, $body_req);
+                    } elseif (is_array($body_req)) {
+                        $body_json = json_encode($body_req);
+                        $body_json = str_replace($pattern, $val, $body_json);
+                        $body_req = json_decode($body_json, true);
                     }
                 }
             }
@@ -532,6 +544,12 @@ elseif ($method === 'POST') {
 
         if (!$url) {
             echo json_encode(['status' => 'error', 'message' => 'URL is required']);
+            exit;
+        }
+
+        // Check if there are still unresolved variables
+        if (preg_match('/{{(.*?)}}/', $url)) {
+            echo json_encode(['status' => 'error', 'message' => 'Unresolved variables in URL: ' . $url . '. Please select an environment or define the variables.']);
             exit;
         }
 
