@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS endpoints (
     headers JSON,
     body_type VARCHAR(20) DEFAULT 'none',
     body TEXT,
+    auth JSON,
     last_updated_by INT,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
@@ -56,7 +57,8 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     endpoint_id INT,
     details TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (endpoint_id) REFERENCES endpoints(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Initial Seed Data (Default password: admin123)

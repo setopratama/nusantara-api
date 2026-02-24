@@ -78,6 +78,28 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Auth Type Logic
+    const authTypeSelect = document.getElementById('auth-type');
+    const authBearerFields = document.getElementById('auth-bearer-fields');
+    const authBasicFields = document.getElementById('auth-basic-fields');
+
+    authTypeSelect.addEventListener('change', (e) => {
+        authBearerFields.classList.add('hidden');
+        authBasicFields.classList.add('hidden');
+        if (e.target.value === 'bearer') authBearerFields.classList.remove('hidden');
+        if (e.target.value === 'basic') authBasicFields.classList.remove('hidden');
+    });
+
+    // Word Wrap Logic
+    const toggleWordWrap = document.getElementById('toggle-word-wrap');
+    toggleWordWrap.addEventListener('change', (e) => {
+        if (e.target.checked) {
+            responseOutput.classList.add('wrap-text');
+        } else {
+            responseOutput.classList.remove('wrap-text');
+        }
+    });
+
     // Key-Value Editor Logic
     window.createRow = (containerId, key = '', value = '') => {
         const container = document.getElementById(containerId);
@@ -389,6 +411,22 @@ document.addEventListener('DOMContentLoaded', () => {
             bodyRawContainer.classList.add('hidden');
             bodyFormContainer.classList.add('hidden');
         }
+
+        // Load Auth
+        const auth = ep.auth || { type: 'none' };
+        authTypeSelect.value = auth.type;
+        authBearerFields.classList.add('hidden');
+        authBasicFields.classList.add('hidden');
+
+        if (auth.type === 'bearer') {
+            document.getElementById('auth-bearer-token').value = auth.token || '';
+            authBearerFields.classList.remove('hidden');
+        } else if (auth.type === 'basic') {
+            document.getElementById('auth-basic-username').value = auth.username || '';
+            document.getElementById('auth-basic-password').value = auth.password || '';
+            authBasicFields.classList.remove('hidden');
+        }
+
         renderSidebar();
     }
 
@@ -605,7 +643,8 @@ document.addEventListener('DOMContentLoaded', () => {
             bodyType: document.querySelector('input[name="body-type"]:checked').value,
             body: document.querySelector('input[name="body-type"]:checked').value === 'raw'
                 ? document.getElementById('request-body-json').value
-                : getKVData('body-form-editor')
+                : getKVData('body-form-editor'),
+            auth: getAuthData()
         };
 
         const res = await fetch('api.php?action=save_endpoint', {
@@ -641,6 +680,18 @@ document.addEventListener('DOMContentLoaded', () => {
         return data;
     }
 
+    function getAuthData() {
+        const type = authTypeSelect.value;
+        const data = { type };
+        if (type === 'bearer') {
+            data.token = document.getElementById('auth-bearer-token').value;
+        } else if (type === 'basic') {
+            data.username = document.getElementById('auth-basic-username').value;
+            data.password = document.getElementById('auth-basic-password').value;
+        }
+        return data;
+    }
+
     sendBtn.addEventListener('click', async () => {
         const method = requestMethod.value;
         const url = requestUrl.value;
@@ -660,7 +711,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch('api.php?action=send_request', {
                 method: 'POST',
                 headers: getHeaders(),
-                body: JSON.stringify({ url, method, headers, body, env_id: envSelector.value })
+                body: JSON.stringify({ url, method, headers, body, auth: getAuthData(), env_id: envSelector.value })
             });
 
             const result = await res.json();

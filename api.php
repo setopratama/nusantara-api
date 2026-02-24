@@ -1,5 +1,7 @@
 <?php
 header('Content-Type: application/json');
+error_reporting(0);
+ini_set('display_errors', 0);
 require_once 'auth.php';
 
 if (!is_logged_in()) {
@@ -12,7 +14,6 @@ $conn = get_db_conn();
 $user_id = $_SESSION['user_id'];
 $user_role = $_SESSION['role'];
 
-// Auto-migration for Environments Table
 mysqli_query($conn, "CREATE TABLE IF NOT EXISTS environments (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
@@ -20,6 +21,19 @@ mysqli_query($conn, "CREATE TABLE IF NOT EXISTS environments (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+// Helper for Audit Logging
+function log_action($conn, $user_id, $action, $details, $endpoint_id = 'NULL') {
+    $details = mysqli_real_escape_string($conn, $details);
+    $action = mysqli_real_escape_string($conn, $action);
+    mysqli_query($conn, "INSERT INTO audit_logs (user_id, action, details, endpoint_id) VALUES ($user_id, '$action', '$details', $endpoint_id)");
+}
+
+// Update Endpoints table to include auth column if not exists (Safe for MySQL \u0026 MariaDB)
+$checkAuth = mysqli_query($conn, "SHOW COLUMNS FROM endpoints LIKE 'auth'");
+if ($checkAuth && mysqli_num_rows($checkAuth) == 0) {
+    mysqli_query($conn, "ALTER TABLE endpoints ADD COLUMN auth JSON AFTER body");
+}
 
 // --- Router ---
 $method = $_SERVER['REQUEST_METHOD'];
@@ -47,6 +61,7 @@ if ($method === 'GET') {
         while ($row = mysqli_fetch_assoc($res)) {
             $row['params'] = json_decode($row['params'], true) ?: new stdClass();
             $row['headers'] = json_decode($row['headers'], true) ?: new stdClass();
+            $row['auth'] = json_decode($row['auth'], true) ?: ['type' => 'none'];
             $endpoints[] = $row;
         }
         echo json_encode($endpoints);
@@ -106,9 +121,9 @@ elseif ($method === 'POST') {
         mysqli_stmt_bind_param($stmt, "ss", $name, $desc);
         
         if (mysqli_stmt_execute($stmt)) {
-            echo json_encode(['status' => 'success', 'id' => mysqli_insert_id($conn)]);
-            // Log Action
-            mysqli_query($conn, "INSERT INTO audit_logs (user_id, action, details) VALUES ($user_id, 'CREATE_PROJECT', 'Created project: $name')");
+            $new_id = mysqli_insert_id($conn);
+            echo json_encode(['status' => 'success', 'id' => $new_id]);
+            log_action($conn, $user_id, 'CREATE_PROJECT', "Created project: $name");
         } else {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
@@ -130,8 +145,7 @@ elseif ($method === 'POST') {
         
         if (mysqli_stmt_execute($stmt)) {
             echo json_encode(['status' => 'success']);
-            // Log Action
-            mysqli_query($conn, "INSERT INTO audit_logs (user_id, action, details) VALUES ($user_id, 'UPDATE_PROJECT', 'Updated project: $name (ID: $id)')");
+            log_action($conn, $user_id, 'UPDATE_PROJECT', "Updated project: $name (ID: $id)");
         } else {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
@@ -156,7 +170,7 @@ elseif ($method === 'POST') {
         
         if (mysqli_stmt_execute($stmt)) {
             echo json_encode(['status' => 'success']);
-            mysqli_query($conn, "INSERT INTO audit_logs (user_id, action, details) VALUES ($user_id, 'DELETE_PROJECT', 'Deleted collection ID: $id')");
+            log_action($conn, $user_id, 'DELETE_PROJECT', "Deleted collection ID: $id");
         } else {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
@@ -173,22 +187,22 @@ elseif ($method === 'POST') {
         $headers = json_encode($data['headers']);
         $body_type = $data['bodyType'];
         $body = is_array($data['body']) ? json_encode($data['body']) : $data['body'];
+        $auth = json_encode($data['auth'] ?? ['type' => 'none']);
 
         if ($id) {
-            $stmt = mysqli_prepare($conn, "UPDATE endpoints SET project_id=?, name=?, method=?, url=?, category=?, params=?, headers=?, body_type=?, body=?, last_updated_by=? WHERE id=?");
-            mysqli_stmt_bind_param($stmt, "issssssssii", $project_id, $name, $method_type, $url, $category, $params, $headers, $body_type, $body, $user_id, $id);
+            $stmt = mysqli_prepare($conn, "UPDATE endpoints SET project_id=?, name=?, method=?, url=?, category=?, params=?, headers=?, body_type=?, body=?, auth=?, last_updated_by=? WHERE id=?");
+            mysqli_stmt_bind_param($stmt, "isssssssssii", $project_id, $name, $method_type, $url, $category, $params, $headers, $body_type, $body, $auth, $user_id, $id);
             $action_log = "UPDATE_ENDPOINT";
         } else {
-            $stmt = mysqli_prepare($conn, "INSERT INTO endpoints (project_id, name, method, url, category, params, headers, body_type, body, last_updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            mysqli_stmt_bind_param($stmt, "issssssssi", $project_id, $name, $method_type, $url, $category, $params, $headers, $body_type, $body, $user_id);
+            $stmt = mysqli_prepare($conn, "INSERT INTO endpoints (project_id, name, method, url, category, params, headers, body_type, body, auth, last_updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            mysqli_stmt_bind_param($stmt, "isssssssssi", $project_id, $name, $method_type, $url, $category, $params, $headers, $body_type, $body, $auth, $user_id);
             $action_log = "CREATE_ENDPOINT";
         }
 
         if (mysqli_stmt_execute($stmt)) {
             $new_id = $id ? $id : mysqli_insert_id($conn);
             echo json_encode(['status' => 'success', 'id' => $new_id]);
-            // Log Action
-            mysqli_query($conn, "INSERT INTO audit_logs (user_id, action, endpoint_id, details) VALUES ($user_id, '$action_log', $new_id, 'Saved endpoint: $name')");
+            log_action($conn, $user_id, $action_log, "Saved endpoint: $name", $new_id);
         } else {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
@@ -213,7 +227,7 @@ elseif ($method === 'POST') {
         
         if (mysqli_stmt_execute($stmt)) {
             echo json_encode(['status' => 'success']);
-            mysqli_query($conn, "INSERT INTO audit_logs (user_id, action, endpoint_id, details) VALUES ($user_id, 'DELETE_ENDPOINT', $id, 'Deleted endpoint ID: $id')");
+            log_action($conn, $user_id, 'DELETE_ENDPOINT', "Deleted endpoint ID: $id", $id);
         } else {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
@@ -235,7 +249,7 @@ elseif ($method === 'POST') {
         
         if (mysqli_stmt_execute($stmt)) {
             echo json_encode(['status' => 'success']);
-            mysqli_query($conn, "INSERT INTO audit_logs (user_id, action, details) VALUES ($user_id, 'RENAME_CATEGORY', 'Renamed category from \"$old_name\" to \"$new_name\" in collection ID: $project_id')");
+            log_action($conn, $user_id, 'RENAME_CATEGORY', "Renamed category from \"$old_name\" to \"$new_name\" in collection ID: $project_id");
         } else {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
@@ -259,11 +273,12 @@ elseif ($method === 'POST') {
         
         if (mysqli_stmt_execute($stmt)) {
             $project_id = mysqli_insert_id($conn);
-            mysqli_query($conn, "INSERT INTO audit_logs (user_id, action, details) VALUES ($user_id, 'IMPORT_COLLECTION', 'Imported collection: $col_name (ID: $project_id)')");
+            log_action($conn, $user_id, 'IMPORT_COLLECTION', "Imported collection: $col_name (ID: $project_id)");
 
             // Process Items
             if (!function_exists('processItems')) {
                 function processItems($conn, $project_id, $items, $user_id, $category = 'Default') {
+                    if (!is_array($items)) return;
                     foreach ($items as $item) {
                         if (isset($item['item'])) {
                             // This is a folder
@@ -318,10 +333,14 @@ elseif ($method === 'POST') {
 
                             $params_json = json_encode($params);
                             $headers_json = json_encode($headers);
+                            $auth_json = json_encode(['type' => 'none']);
 
-                            $stmt = mysqli_prepare($conn, "INSERT INTO endpoints (project_id, name, method, url, category, params, headers, body_type, body, last_updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                            mysqli_stmt_bind_param($stmt, "issssssssi", $project_id, $name, $method, $url, $category, $params_json, $headers_json, $body_type, $body_content, $user_id);
-                            mysqli_stmt_execute($stmt);
+                            $stmt = mysqli_prepare($conn, "INSERT INTO endpoints (project_id, name, method, url, category, params, headers, body_type, body, auth, last_updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                            if ($stmt) {
+                                mysqli_stmt_bind_param($stmt, "isssssssssi", $project_id, $name, $method, $url, $category, $params_json, $headers_json, $body_type, $body_content, $auth_json, $user_id);
+                                mysqli_stmt_execute($stmt);
+                                mysqli_stmt_close($stmt);
+                            }
                         }
                     }
                 }
@@ -334,7 +353,7 @@ elseif ($method === 'POST') {
             echo json_encode(['status' => 'success', 'project_id' => $project_id]);
         } else {
             http_response_code(500);
-            echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
+            echo json_encode(['status' => 'error', 'message' => 'Failed to create collection: ' . mysqli_error($conn)]);
         }
     }
     elseif ($action === 'create_user') {
@@ -360,7 +379,7 @@ elseif ($method === 'POST') {
         
         if (mysqli_stmt_execute($stmt)) {
             echo json_encode(['status' => 'success']);
-            mysqli_query($conn, "INSERT INTO audit_logs (user_id, action, details) VALUES ($user_id, 'CREATE_USER', 'Created user: $username with role: $role')");
+            log_action($conn, $user_id, 'CREATE_USER', "Created user: $username with role: $role");
         } else {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
@@ -391,7 +410,7 @@ elseif ($method === 'POST') {
         
         if (mysqli_stmt_execute($stmt)) {
             echo json_encode(['status' => 'success']);
-            mysqli_query($conn, "INSERT INTO audit_logs (user_id, action, details) VALUES ($user_id, 'DELETE_USER', 'Deleted user ID: $target_id')");
+            log_action($conn, $user_id, 'DELETE_USER', "Deleted user ID: $target_id");
         } else {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
@@ -419,7 +438,7 @@ elseif ($method === 'POST') {
         
         if (mysqli_stmt_execute($stmt)) {
             echo json_encode(['status' => 'success']);
-            mysqli_query($conn, "INSERT INTO audit_logs (user_id, action, details) VALUES ($user_id, 'UPDATE_USER_PASSWORD', 'Updated password for user ID: $target_id')");
+            log_action($conn, $user_id, 'UPDATE_USER_PASSWORD', "Updated password for user ID: $target_id");
         } else {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
@@ -455,7 +474,7 @@ elseif ($method === 'POST') {
         
         if (mysqli_stmt_execute($stmt)) {
             echo json_encode(['status' => 'success']);
-            mysqli_query($conn, "INSERT INTO audit_logs (user_id, action, details) VALUES ($user_id, 'UPDATE_PROFILE_PASSWORD', 'User updated their own password')");
+            log_action($conn, $user_id, 'UPDATE_PROFILE_PASSWORD', "User updated their own password");
         } else {
             http_response_code(500);
             echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
@@ -469,7 +488,7 @@ elseif ($method === 'POST') {
         mysqli_stmt_bind_param($stmt, "ss", $name, $vars);
         if (mysqli_stmt_execute($stmt)) {
             echo json_encode(['status' => 'success', 'id' => mysqli_insert_id($conn)]);
-            mysqli_query($conn, "INSERT INTO audit_logs (user_id, action, details) VALUES ($user_id, 'CREATE_ENVIRONMENT', 'Created env: $name')");
+            log_action($conn, $user_id, 'CREATE_ENVIRONMENT', "Created env: $name");
         } else {
             http_response_code(500); echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
         }
@@ -483,7 +502,7 @@ elseif ($method === 'POST') {
         mysqli_stmt_bind_param($stmt, "ssi", $name, $vars, $id);
         if (mysqli_stmt_execute($stmt)) {
             echo json_encode(['status' => 'success']);
-            mysqli_query($conn, "INSERT INTO audit_logs (user_id, action, details) VALUES ($user_id, 'UPDATE_ENVIRONMENT', 'Updated env: $name')");
+            log_action($conn, $user_id, 'UPDATE_ENVIRONMENT', "Updated env: $name");
         } else {
             http_response_code(500); echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
         }
@@ -495,7 +514,7 @@ elseif ($method === 'POST') {
         mysqli_stmt_bind_param($stmt, "i", $id);
         if (mysqli_stmt_execute($stmt)) {
             echo json_encode(['status' => 'success']);
-            mysqli_query($conn, "INSERT INTO audit_logs (user_id, action, details) VALUES ($user_id, 'DELETE_ENVIRONMENT', 'Deleted env ID: $id')");
+            log_action($conn, $user_id, 'DELETE_ENVIRONMENT', "Deleted env ID: $id");
         } else {
             http_response_code(500); echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
         }
@@ -505,40 +524,55 @@ elseif ($method === 'POST') {
         $method_req = $data['method'] ?? 'GET';
         $headers_req = $data['headers'] ?? [];
         $body_req = $data['body'] ?? '';
+        $auth_req = $data['auth'] ?? ['type' => 'none'];
         $env_id = isset($data['env_id']) && is_numeric($data['env_id']) ? intval($data['env_id']) : null;
 
         // Variable Replacement from Environment
         if ($env_id) {
             $stmt = mysqli_prepare($conn, "SELECT variables FROM environments WHERE id = ?");
-            mysqli_stmt_bind_param($stmt, "i", $env_id);
-            mysqli_stmt_execute($stmt);
-            $res = mysqli_stmt_get_result($stmt);
-            if ($row = mysqli_fetch_assoc($res)) {
-                $vars = json_decode($row['variables'], true) ?: [];
-                foreach ($vars as $key => $val) {
-                    $pattern = '{{' . $key . '}}';
-                    
-                    // Replace in URL
-                    $url = str_replace($pattern, $val, $url);
-                    
-                    // Replace in Headers (Key and Value)
-                    $new_headers = [];
-                    foreach ($headers_req as $hk => $hv) {
-                        $new_k = str_replace($pattern, $val, $hk);
-                        $new_v = str_replace($pattern, $val, $hv);
-                        $new_headers[$new_k] = $new_v;
-                    }
-                    $headers_req = $new_headers;
-
-                    // Replace in Body
-                    if (is_string($body_req)) {
-                        $body_req = str_replace($pattern, $val, $body_req);
-                    } elseif (is_array($body_req)) {
-                        $body_json = json_encode($body_req);
-                        $body_json = str_replace($pattern, $val, $body_json);
-                        $body_req = json_decode($body_json, true);
+            if ($stmt) {
+                mysqli_stmt_bind_param($stmt, "i", $env_id);
+                mysqli_stmt_execute($stmt);
+                $res = mysqli_stmt_get_result($stmt);
+                if ($res && $row = mysqli_fetch_assoc($res)) {
+                    $vars = json_decode($row['variables'], true);
+                    if (is_array($vars)) {
+                        foreach ($vars as $key => $val) {
+                            $pattern = '{{' . $key . '}}';
+                            
+                            // Replace in URL
+                            $url = str_replace($pattern, $val, $url);
+                            
+                            // Replace in Headers (Key and Value)
+                            $new_headers = [];
+                            foreach ($headers_req as $hk => $hv) {
+                                $new_k = str_replace($pattern, $val, $hk);
+                                $new_v = str_replace($pattern, $val, $hv);
+                                $new_headers[$new_k] = $new_v;
+                            }
+                            $headers_req = $new_headers;
+        
+                            // Replace in Body
+                            if (is_string($body_req)) {
+                                $body_req = str_replace($pattern, $val, $body_req);
+                            } elseif (is_array($body_req)) {
+                                $body_json = json_encode($body_req);
+                                $body_json = str_replace($pattern, $val, $body_json);
+                                $body_req = json_decode($body_json, true);
+                            }
+        
+                            // Replace in Auth
+                            if (is_array($auth_req)) {
+                                foreach ($auth_req as $ak => $av) {
+                                    if (is_string($av)) {
+                                        $auth_req[$ak] = str_replace($pattern, $val, $av);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
+                mysqli_stmt_close($stmt);
             }
         }
 
@@ -548,8 +582,9 @@ elseif ($method === 'POST') {
         }
 
         // Check if there are still unresolved variables
-        if (preg_match('/{{(.*?)}}/', $url)) {
-            echo json_encode(['status' => 'error', 'message' => 'Unresolved variables in URL: ' . $url . '. Please select an environment or define the variables.']);
+        if (preg_match_all('/{{(.*?)}}/', $url, $matches)) {
+            $unresolved = implode(', ', $matches[0]);
+            echo json_encode(['status' => 'error', 'message' => 'Unresolved variables: ' . $unresolved . '. Please select an environment where these variables are defined.']);
             exit;
         }
 
@@ -564,6 +599,15 @@ elseif ($method === 'POST') {
         foreach ($headers_req as $k => $v) {
             $formatted_headers[] = "$k: $v";
         }
+
+        // Apply Authentication
+        if ($auth_req['type'] === 'bearer' && !empty($auth_req['token'])) {
+            $formatted_headers[] = "Authorization: Bearer " . $auth_req['token'];
+        } elseif ($auth_req['type'] === 'basic' && !empty($auth_req['username'])) {
+            curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
+            curl_setopt($ch, CURLOPT_USERPWD, $auth_req['username'] . ":" . ($auth_req['password'] ?? ''));
+        }
+
         curl_setopt($ch, CURLOPT_HTTPHEADER, $formatted_headers);
         
         if ($method_req !== 'GET' && $body_req) {

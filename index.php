@@ -153,13 +153,26 @@
                     <div class="tab-content hidden" id="auth-tab">
                         <div class="auth-config">
                             <label>Auth Type</label>
-                            <select id="auth-type">
+                            <select id="auth-type" class="select-control">
                                 <option value="none">No Auth</option>
                                 <option value="bearer">Bearer Token</option>
                                 <option value="basic">Basic Auth</option>
                             </select>
-                            <div id="auth-bearer-fields" class="hidden mt-2">
-                                <input type="text" id="auth-bearer-token" placeholder="Token">
+                            <div id="auth-bearer-fields" class="hidden mt-3">
+                                <label>Token</label>
+                                <input type="text" id="auth-bearer-token" placeholder="Bearer Token" class="form-control">
+                            </div>
+                            <div id="auth-basic-fields" class="hidden mt-3">
+                                <div style="display: flex; gap: 15px;">
+                                    <div style="flex: 1;">
+                                        <label>Username</label>
+                                        <input type="text" id="auth-basic-username" placeholder="Username" class="form-control">
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <label>Password</label>
+                                        <input type="password" id="auth-basic-password" placeholder="Password" class="form-control">
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -168,7 +181,13 @@
 
             <section class="response-section">
                 <div class="response-header">
-                    <h3>Response</h3>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <h3>Response</h3>
+                        <label class="wrap-toggle" title="Toggle Word Wrap">
+                            <input type="checkbox" id="toggle-word-wrap">
+                            <span>Wrap Text</span>
+                        </label>
+                    </div>
                     <div id="response-meta" class="hidden">
                         <span class="status-badge" id="response-status"></span>
                         <span class="time-badge" id="response-time"></span>

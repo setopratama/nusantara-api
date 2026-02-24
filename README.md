@@ -5,81 +5,49 @@ Dokumentasi API modern berbasis web yang mendukung manajemen koleksi, pengujian 
 ## 🌟 Fitur Unggulan
 
 - **Collection Management**: Kelola dokumentasi API dalam berbagai koleksi khusus. Mendukung pengubahan nama dan penghapusan (khusus Superadmin).
+- **Authentication Support**: Dukungan penuh untuk **Bearer Token** dan **Basic Auth** pada setiap endpoint, termasuk dukungan variabel lingkungan.
 - **Import from Postman**: Migrasi data super cepat! Impor koleksi Postman Anda (format v2.0 atau v2.1) langsung melalui file JSON.
 - **Advanced Request Builder**: 
   - Mendukung metode GET, POST, PUT, DELETE, dll.
   - Editor dinamis untuk URL Params, Headers, dan Request Body.
   - Dukungan Request Body format **Raw JSON** dan **Form Data**.
 - **Environment & Variables**:
-  - **Dynamic Substitution**: Gunakan variabel seperti `{{base_url}}` atau `{{api_key}}` yang otomatis diganti sesuai lingkungan yang dipilih.
-  - **Multi-Profile**: Kelola profil **Staging**, **Production**, atau **Local** dengan mudah melalui antarmuka khusus.
-- **Backend Proxy (CORS Bypass)**: Tidak perlu lagi khawatir dengan masalah CORS saat mencoba API. Seluruh request diproses melalui server backend menggunakan PHP cURL.
-- **Beautiful Response Viewer**:
-  - **JSON Syntax Highlighting**: Pewarnaan otomatis untuk respon JSON agar mudah dibaca.
-  - **Professional Line Numbers**: Penomoran baris otomatis pada respon (seperti editor IDE) lengkap dengan kolom gutter.
-  - **High Performance UI**: Menggunakan font **IBM Plex Mono** untuk pengalaman membaca kode yang presisi.
-  - Statistik Response: Menampilkan HTTP Status, waktu respon (latency), dan ukuran data secara real-time.
-- **Smart Sidebar**:
-  - Pengelompokan berdasarkan Kategori/Group.
-  - **Batch Rename Category**: Ubah nama grup/folder secara massal dalam sekali klik.
-  - Indikator Active State: Penanda endpoint yang sedang dibuka berbasis ID unik.
-- **User & Security Management**:
-  - **My Profile**: Pengguna dapat mengelola profil pribadi dan mengubah password secara mandiri.
-  - **User Management (Superadmin)**: Kontrol akses untuk menambah atau mengedit password user lain.
-  - **Role-Based Access Control (RBAC)**: Mendukung role `Superadmin`, `Editor`, dan `Viewer`.
-- **Integrated Audit Logs**: Antarmuka log aktivitas langsung di dalam aplikasi (khusus Superadmin) untuk memantau setiap perubahan sistem secara real-time.
+  - **Dynamic Substitution**: Gunakan variabel seperti `{{base_url}}` atau `{{api_key}}` yang otomatis diganti di URL, Header, Body, dan Auth.
+  - **Multi-Profile**: Kelola profil **Staging**, **Production**, atau **Local** dengan mudah.
+- **Improved UI/UX**:
+  - **Response Word Wrap**: Fitur lipat teks untuk pembacaan respon JSON yang panjang.
+  - **Premium Dark Mode**: Antarmuka berbasis Glassmorphism menggunakan CSS Variables.
+- **Integrated Audit Logs**: Pencatatan aktivitas sistem yang aman (SQL Injection Protected) untuk memantau setiap aksi user.
 
 ## 🛠 Tech Stack
 
 - **Backend**: PHP 8.x (Native) dengan ekstensi cURL aktif.
-- **Database**: MySQL / MariaDB.
-- **Frontend**: Vanilla JavaScript (ES6+), Modern CSS (Flexbox & Grid).
-- **Icons**: Font Awesome 6.
-- **Typography**: 
-  - **Inter**: Digunakan untuk elemen UI utama (navigasi, tombol, teks umum).
-  - **IBM Plex Mono**: Digunakan untuk respon JSON & body editor (Postman style).
-  - **Fira Code**: Font fallback monospaced.
+- **Database**: MySQL / MariaDB (Mendukung kolom tipe JSON).
+- **Frontend**: Vanilla JavaScript (ES6+), Modern CSS (Variables & Flexbox).
+- **Typography**: Inter (UI) & IBM Plex Mono (Code).
 
-## 🚀 Instalasi & Persiapan
+## 📊 Struktur Data & Keamanan
 
-1. **Konfigurasi Database**:
-   - Buat database baru bernama `nusantara_apidoc`.
-   - Import file `database.sql` ke dalam database tersebut.
-   
-2. **Konfigurasi Aplikasi**:
-   - Pastikan konfigurasi database di `config.php` sudah benar sesuai dengan environment server Anda.
-   - Pastikan PHP memiliki izin untuk melakukan `exec` atau `curl`.
-
-3. **Jalankan Aplikasi**:
-   - Akses root folder aplikasi melalui web server Anda.
-   - Login menggunakan akun yang sudah terdaftar di tabel `users`.
-
-## 📊 Struktur Database Utama
-
-- `users`: Mengelola data pengguna, password (hash), dan role.
-- `projects` (Collections): Master data grup koleksi utama.
-- `environments`: Penyimpanan variabel dinamis (JSON) berdasarkan profil lingkungan.
-- `endpoints`: Detail instruksi API termasuk payload JSON yang terenkripsi di baris params/headers.
-- `audit_logs`: Log keamanan dan aktivitas sistem yang mencatat setiap aksi user.
+- **Kolom JSON**: Tabel `endpoints` menggunakan tipe data JSON untuk kolom `params`, `headers`, dan `auth` guna fleksibilitas struktur data.
+- **Audit Logging**: Gunakan fungsi helper `log_action($conn, $user_id, $action, $details, $endpoint_id)` di `api.php`. Fungsi ini memastikan data di-*escape* dengan benar untuk mencegah SQL Injection.
+- **Auto-Migration**: Sistem melakukan pengecekan kolom/tabel secara otomatis di awal `api.php` menggunakan pola `SHOW COLUMNS` yang aman bagi berbagai versi database.
 
 ## 🤖 Agentic AI Development (AI Handoff Guide)
 
-Software ini dirancang agar mudah dipahami secara instan oleh AI Agent (seperti **Antigravity**) melalui struktur yang transparan (Seamless AI Handoff):
+Software ini dirancang untuk "Seamless AI Handoff". Berikut adalah konteks teknis untuk AI Agent:
 
-- **Architecture**: Native PHP (Backend) & Vanilla JS (Frontend) untuk meminimalkan kompleksitas dependensi.
-- **Entry Points**: 
-    - `api.php`: Pusat seluruh logika data (Router).
-    - `app.js`: Pusat interaksi UI dan state management.
-    - `modern-ui.css`: Kontrol penuh visual melalui CSS Variables di `:root`.
-- **Database Consistency**: Skema database di `database.sql` adalah *source of truth*. Fitur *Auto-Migration* di `api.php` memastikan tabel selalu up-to-date.
+- **State Management**: Seluruh state diatur dalam `app.js` menggunakan variabel global seperti `projects` dan `endpoints`. Sinkronisasi UI dilakukan melalui fungsi `renderSidebar()` dan `loadEndpointToUI()`.
+- **Router Logic**: `api.php` bertindak sebagai controller tunggal dengan parameter `?action=`. Pastikan setiap action mengembalikan respon JSON dan menangani `http_response_code` dengan benar.
+- **Security Check**: Cek fungsi `is_logged_in()` dan `require_login()` di `auth.php`. Seluruh request API wajib melewati pengecekan sesi di baris awal `api.php`.
+- **Variable Engine**: Logika penggantian variabel `{{var}}` berada di `api.php` dalam aksi `send_request`. Logika ini bersifat rekursif untuk string, array, dan objek JSON.
 
 ## 🧠 Pedoman Pengembangan
 
-1. **Interaksi API**: Gunakan `api.php?action=[nama_action]` untuk seluruh operasional data.
-2. **CORS Safe**: Selalu gunakan proxy backend via `send_request` untuk pengujian endpoint.
-3. **Styling**: Patuhi variabel di `modern-ui.css` untuk menjaga konsistensi UI premium.
-4. **Keamanan**: Wajib menggunakan **Prepared Statements** untuk semua interaksi database baru.
+1. **DB Updates**: Jika menambah kolom, gunakan pengecekan manual (`SHOW COLUMNS`) di `api.php` agar kompatibel dengan target server (VPS/Shared Hosting).
+2. **Logging**: Selalu panggil `log_action()` setelah operasi `INSERT/UPDATE/DELETE` yang krusial.
+3. **Styling**: Gunakan CSS Variables (`--accent-primary`, dll) di `modern-ui.css`. Hindari *hardcoded colors*.
+4. **JSON Ops**: Selalu gunakan `json_encode` di PHP dan `JSON.stringify` di JS saat bertukar data kompleks melalui API.
 
 ---
 **Antigravity Agentic AI**
-*Membangun infrastruktur cerdas untuk Setopratama Project.*
+*Inovasi Tanpa Batas untuk Nusantara API Documentation.*

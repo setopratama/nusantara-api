@@ -353,7 +353,55 @@ body {
 }
 
 .hidden {
-    display: none;
+    display: none !important;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px 12px;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-main);
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.form-control:focus {
+    border-color: var(--accent-primary);
+}
+
+.select-control {
+    width: 100%;
+    padding: 10px 12px;
+    background-color: var(--sidebar-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-main);
+    font-size: 0.95rem;
+    outline: none;
+    cursor: pointer;
+}
+
+.select-control:focus {
+    border-color: var(--accent-primary);
+}
+
+.auth-config {
+    background-color: rgba(15, 23, 42, 0.3);
+    padding: 25px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    margin: 10px 0;
+}
+
+.auth-config label {
+    display: block;
+    margin-bottom: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-main);
 }
 
 /* Key Value Editor */
@@ -431,6 +479,32 @@ body {
     font-size: 0.8rem;
 }
 
+.wrap-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.wrap-toggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-main);
+    border-color: var(--accent-primary);
+}
+
+.wrap-toggle input {
+    margin: 0;
+    cursor: pointer;
+}
+
 .status-badge {
     color: var(--success);
     font-weight: 700;
@@ -473,6 +547,19 @@ body {
     /* Account for lateral padding */
     margin-left: -20px;
     /* Pull back to align gutter with edge */
+}
+
+.json-code.wrap-text {
+    width: 100%;
+}
+
+.json-code.wrap-text .code-line {
+    min-width: 100%;
+}
+
+.json-code.wrap-text .line-content {
+    white-space: pre-wrap;
+    word-break: break-all;
 }
 
 .code-line:hover {
@@ -636,6 +723,10 @@ body {
 /* Utils */
 .mt-2 {
     margin-top: 10px;
+}
+
+.mt-3 {
+    margin-top: 20px;
 }
 
 /* Project Grouping */
